@@ -1,0 +1,213 @@
+<?php
+
+/**
+ * @file
+ * Contains tom_select_field.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\WidgetInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_help().
+ */
+function tom_select_field_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.tom_select_field':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Tom Select Field module provides a widget for select fields using the Tom Select JavaScript library.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ */
+function tom_select_field_field_widget_info_alter(array &$info) {
+  // Add settings to the following field widgets.
+  $widgets = [
+    'options_select',
+    'entity_reference_autocomplete',
+    'entity_reference_autocomplete_tags',
+  ];
+
+  foreach ($widgets as $widget) {
+    if (isset($info[$widget])) {
+      // Add our third-party settings to these widgets
+      $info[$widget]['third_party_settings']['tom_select_field'] = TRUE;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_third_party_settings_form().
+ */
+function tom_select_field_field_widget_third_party_settings_form(WidgetInterface $plugin, FieldDefinitionInterface $field_definition, $form_mode, $form, FormStateInterface $form_state) {
+  $element = [];
+  
+  // Only add settings to supported widgets.
+  $supported_widgets = [
+    'options_select',
+    'entity_reference_autocomplete',
+    'entity_reference_autocomplete_tags',
+  ];
+  
+  if (in_array($plugin->getPluginId(), $supported_widgets)) {
+    $settings = $plugin->getThirdPartySettings('tom_select_field');
+    
+    $element['enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Use Tom Select'),
+      '#default_value' => $settings['enabled'] ?? FALSE,
+    ];
+    
+    $element['settings'] = [
+      '#type' => 'details',
+      '#title' => t('Tom Select settings'),
+      '#open' => !empty($settings['enabled']),
+      '#states' => [
+        'visible' => [
+          ':input[name="fields[' . $field_definition->getName() . '][settings_edit_form][third_party_settings][tom_select_field][enabled]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+    
+    $element['settings']['create'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Allow creating new items'),
+      '#default_value' => $settings['settings']['create'] ?? FALSE,
+      '#description' => t('Allow users to create items that are not in the list of options.'),
+    ];
+    
+    $element['settings']['create_on_blur'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Create on blur'),
+      '#default_value' => $settings['settings']['create_on_blur'] ?? FALSE,
+      '#description' => t('When the user exits the field, create a new option if the input is not empty.'),
+      '#states' => [
+        'visible' => [
+          ':input[name="fields[' . $field_definition->getName() . '][settings_edit_form][third_party_settings][tom_select_field][settings][create]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+    
+    $element['settings']['max_items'] = [
+      '#type' => 'number',
+      '#title' => t('Maximum number of items'),
+      '#default_value' => $settings['settings']['max_items'] ?? NULL,
+      '#description' => t('The maximum number of items the user can select. Leave empty for unlimited.'),
+      '#min' => 1,
+    ];
+    
+    $element['settings']['persist'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Persist selection'),
+      '#default_value' => $settings['settings']['persist'] ?? TRUE,
+      '#description' => t('If false, items created by the user will not show up as available options once they are unselected.'),
+    ];
+    
+    $element['settings']['open_on_focus'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Open on focus'),
+      '#default_value' => $settings['settings']['open_on_focus'] ?? TRUE,
+      '#description' => t('Show the dropdown immediately when the control receives focus.'),
+    ];
+    
+    $element['settings']['hide_selected'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Hide selected'),
+      '#default_value' => $settings['settings']['hide_selected'] ?? TRUE,
+      '#description' => t('If true, the items that are currently selected will not be shown in the dropdown list of available options.'),
+    ];
+    
+    $element['settings']['allow_empty_option'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Allow empty option'),
+      '#default_value' => $settings['settings']['allow_empty_option'] ?? FALSE,
+      '#description' => t('If true, empty options will be treated as normal options instead of being ignored.'),
+    ];
+    
+    $element['settings']['remove_button'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Show remove button'),
+      '#default_value' => $settings['settings']['remove_button'] ?? FALSE,
+      '#description' => t('Add a button to each selected item to remove it.'),
+    ];
+    
+    $element['settings']['placeholder'] = [
+      '#type' => 'textfield',
+      '#title' => t('Placeholder'),
+      '#default_value' => $settings['settings']['placeholder'] ?? '',
+      '#description' => t('The placeholder text to display when nothing is selected.'),
+    ];
+  }
+  
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function tom_select_field_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
+  $field_definition = $context['items']->getFieldDefinition();
+  $widget = $context['widget'];
+  $settings = $widget->getThirdPartySettings('tom_select_field');
+  
+  // Only apply to supported widgets with Tom Select enabled.
+  $supported_widgets = [
+    'options_select',
+    'entity_reference_autocomplete',
+    'entity_reference_autocomplete_tags',
+  ];
+  
+  if (in_array($widget->getPluginId(), $supported_widgets) && !empty($settings['enabled'])) {
+    // Add the library.
+    $element['#attached']['library'][] = 'tom_select_field/tom_select_field';
+    
+    // Add settings for the JavaScript.
+    $tom_select_settings = [
+      'create' => !empty($settings['settings']['create']),
+      'createOnBlur' => !empty($settings['settings']['create_on_blur']),
+      'persist' => $settings['settings']['persist'] ?? TRUE,
+      'openOnFocus' => $settings['settings']['open_on_focus'] ?? TRUE,
+      'hideSelected' => $settings['settings']['hide_selected'] ?? TRUE,
+      'allowEmptyOption' => !empty($settings['settings']['allow_empty_option']),
+    ];
+    
+    // Add placeholder if set
+    if (!empty($settings['settings']['placeholder'])) {
+      $tom_select_settings['placeholder'] = $settings['settings']['placeholder'];
+    }
+    
+    if (!empty($settings['settings']['max_items'])) {
+      $tom_select_settings['maxItems'] = (int) $settings['settings']['max_items'];
+    }
+    
+    // Add plugins
+    $tom_select_settings['plugins'] = [];
+    
+    // Add remove_button plugin if enabled
+    if (!empty($settings['settings']['remove_button'])) {
+      $tom_select_settings['plugins']['remove_button'] = [];
+    }
+    
+    // For select elements
+    if (isset($element['#type']) && $element['#type'] === 'select') {
+      $element['#attributes']['class'][] = 'tom-select-field';
+      $element['#attributes']['data-tom-select-settings'] = json_encode($tom_select_settings);
+    }
+    // For entity reference autocomplete
+    elseif (isset($element['target_id'])) {
+      $element['target_id']['#attributes']['class'][] = 'tom-select-field';
+      $element['target_id']['#attributes']['data-tom-select-settings'] = json_encode($tom_select_settings);
+    }
+    // For other elements
+    else {
+      $element['#attributes']['class'][] = 'tom-select-field';
+      $element['#attributes']['data-tom-select-settings'] = json_encode($tom_select_settings);
+    }
+  }
+}

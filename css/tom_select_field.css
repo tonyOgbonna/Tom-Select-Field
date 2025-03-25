@@ -1,0 +1,29 @@
+/**
+ * @file
+ * Styles for Tom Select field widget.
+ */
+
+/* Add some spacing between the field label and the Tom Select control */
+.field--widget-options-select .ts-wrapper,
+.field--widget-entity-reference-autocomplete .ts-wrapper,
+.field--widget-entity-reference-autocomplete-tags .ts-wrapper {
+  margin-top: 0.5em;
+}
+
+/* Ensure Tom Select control has proper width */
+.tom-select-field + .ts-wrapper {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Style for the dropdown to match Drupal's admin theme */
+.ts-dropdown {
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for selected items */
+.ts-wrapper .ts-control .item {
+  background-color: #e6f1fa;
+  border-color: #c2e0ff;
+}

@@ -1,0 +1,9 @@
+name: Tom Select Field
+type: module
+description: 'Provides a Tom Select widget for Drupal fields.'
+core_version_requirement: ^9.3 || ^10 || ^11
+package: Field
+dependencies:
+  - drupal:field
+  - drupal:options
+configure: entity.entity_form_display.field_widget_settings

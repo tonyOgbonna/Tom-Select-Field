@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Tom Select Field module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function tom_select_field_requirements($phase) {
+  $requirements = [];
+
+  if ($phase == 'runtime') {
+    $library_path = '/libraries/tom-select/dist/js/tom-select.complete.min.js';
+    $library_exists = file_exists(DRUPAL_ROOT . $library_path);
+
+    $requirements['tom_select_library'] = [
+      'title' => t('Tom Select library'),
+      'description' => $library_exists 
+        ? t('The Tom Select library is installed.') 
+        : t('The Tom Select library is not installed. Download it from <a href="@url">@url</a> and place it in the /libraries/tom-select directory.', 
+            ['@url' => 'https://github.com/orchidjs/tom-select/releases']),
+      'severity' => $library_exists ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      'value' => $library_exists ? t('Installed') : t('Not installed'),
+    ];
+  }
+
+  return $requirements;
+}
