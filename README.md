@@ -2,11 +2,11 @@
 
 ## Introduction
 
-Tom Select Field is a Drupal 11 module that integrates the Tom Select JavaScript library with Drupal's form API to provide an enhanced select widget for various field types.
+Tom Select Field is a Drupal module that integrates the Tom Select JavaScript library with Drupal's form API to provide an enhanced select widget for various field types.
 
 ## Requirements
 
-- Drupal 11
+- Drupal 9.3+, 10, or 11
 - Tom Select library (https://tom-select.js.org/)
 
 ## Installation
