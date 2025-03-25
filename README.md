@@ -57,4 +57,4 @@ The module provides the following configuration options for each field:
 
 ## License
 
-This project is licensed under the GNU General Public License v2.0 or later.
+This project is licensed under the GNU General Public License v3.0 or later.
